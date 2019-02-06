@@ -1,18 +1,20 @@
 Floppy Ultra Compression Filesystem
 ---
 
-- XZip per block/ snappy per block.
+- LZ4 Each file before assigning blocks.
 - BS: 512bytes
 
 
 File descriptor:
 ---
 
-location 0000101101000000 2 Bytes
+block location 0000101101000000 2 Bytes
 
-part 0000101101000000 2 Bytes
+file part 0000101101000000 2 Bytes
 
-filename 8 bytes name + 4 Byte extension UTF-8 only. 12 bytes total. Depad the first 8 bytes
+filename 8 bytes name + 4 Byte extension UTF-8 only. 12 bytes total.(Yes I know. TINY.) Depad the first 8 bytes(maybe...)
+
+(this could be 9 bytes name + 3 Byte extension. but some people have weird programs that use four character extensions. BLEGH)
 
 no directories
 

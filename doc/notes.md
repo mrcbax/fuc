@@ -18,5 +18,8 @@ filename 8 bytes name + 4 Byte extension UTF-8 only. 12 bytes total.(Yes I know.
 
 no directories
 
-Total file allocation table 45     Kilobytes
-                            1395   Kilobytes of space left on drive.
+File allocation table:
+
+Total file allocation table size:
+- 45 Kilobytes
+- 1395 Kilobytes of space left on drive.

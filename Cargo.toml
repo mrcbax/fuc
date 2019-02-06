@@ -1,0 +1,10 @@
+[package]
+name = "fuc"
+version = "0.1.0"
+authors = ["Chad Baxter <cbaxter@mail.umw.edu>"]
+edition = "2018"
+
+[dependencies]
+dd-lib = "0.2.1"
+lz4 = "1.23.1"
+rand = "0.6.5"

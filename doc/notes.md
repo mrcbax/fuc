@@ -19,6 +19,7 @@ filename 8 bytes name + 4 Byte extension UTF-8 only. 12 bytes total.(Yes I know.
 no directories
 
 File allocation table:
+---
 
 Total file allocation table size:
 - 45 Kilobytes

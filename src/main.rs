@@ -17,7 +17,7 @@ pub struct FileDescriptor {
 
 impl FileDescriptor {
     fn as_slice(&self) -> [u8; 16] {
-        let mut descriptor_slice: [u8; 16] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        let mut descriptor_slice: [u8; 16] = [0u8; 16];
         let mut i: usize = 0;
         for byte in &self.block {
             descriptor_slice[i] = byte.clone();
@@ -50,6 +50,11 @@ pub struct FileAllocationTable {
 }
 
 impl FileAllocationTable {
+    fn new() -> FileAllocationTable {
+        let fdescs: Vec<FileDescriptor> = Vec::with_capacity(2880);
+        FileAllocationTable{fdescs: fdescs}
+    }
+
     fn write(&self, location: String) -> Result<usize, &'static str> {
         unimplemented!();
     }
@@ -64,11 +69,21 @@ impl FileAllocationTable {
 }
 
 pub struct Block {
-    data: [u8; 512]
+    pub data: [u8; 512]
 }
 
 impl Block {
+    fn new() -> Block {
+        Block{data:[0u8; 512]}
+    }
 
+    fn clear(& mut self) {
+        self = [0u8; 512];
+    }
+
+    fn set(& mut self, data: [u8; 512]) {
+        self = & mut Block{data: data};
+    }
 }
 
 pub struct Volume {
@@ -78,6 +93,10 @@ pub struct Volume {
 }
 
 impl Volume {
+    fn new() -> Volume {
+        let blocks: Vec<Block> = Vec::with_capacity(2880);
+        Volume{magic: MAGIC, fat: FileAllocationTable::new(), blocks: blocks}
+    }
 
 }
 

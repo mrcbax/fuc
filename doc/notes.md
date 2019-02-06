@@ -8,6 +8,8 @@ Floppy Ultra Compression Filesystem
 File descriptor:
 ---
 
+`I could make this superblock oriented and cut the block location and file part data of the descriptor in half. 1 Byte 2 Nybbles (Nybble #1 superblock Nybble #2 subblock)`
+
 block location 0000101101000000 2 Bytes
 
 file part 0000101101000000 2 Bytes

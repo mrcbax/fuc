@@ -10,6 +10,7 @@ use rand::prelude::*;
 pub const MAGIC: [u8; 3] = ['f' as u8, 'u' as u8, 'c' as u8];
 
 pub struct FileDescriptor {
+    pub dirty: bool,
     pub block: [u8; 2],
     pub part: [u8; 2],
     pub name: [u8; 12]
@@ -35,7 +36,7 @@ impl FileDescriptor {
     }
 
     fn from_slice(slice: [u8; 16]) -> FileDescriptor {
-        FileDescriptor{block: [slice[0], slice[1]], part: [slice[2], slice[3]], name: [slice[4], slice[5], slice[6], slice[7], slice[8], slice[9], slice[10], slice[11], slice[12], slice[13], slice[14], slice[15]]}
+        FileDescriptor{dirty: true, block: [slice[0], slice[1]], part: [slice[2], slice[3]], name: [slice[4], slice[5], slice[6], slice[7], slice[8], slice[9], slice[10], slice[11], slice[12], slice[13], slice[14], slice[15]]}
     }
 }
 
@@ -46,43 +47,55 @@ impl PartialEq for FileDescriptor {
 }
 
 pub struct FileAllocationTable {
+    dirty: bool,
     pub fdescs: Vec<FileDescriptor>
 }
 
 impl FileAllocationTable {
     fn new() -> FileAllocationTable {
         let fdescs: Vec<FileDescriptor> = Vec::with_capacity(2880);
-        FileAllocationTable{fdescs: fdescs}
+        FileAllocationTable{dirty: true, fdescs: fdescs}
     }
 
-    fn write(&self, location: String) -> Result<usize, &'static str> {
+    fn write(& mut self, location: String) -> Result<usize, &'static str> {
+        self.dirty = false;
         unimplemented!();
     }
 
     fn add_descriptor(&mut self, descriptor: FileDescriptor) {
         self.fdescs.push(descriptor);
+        self.dirty = true;
     }
 
     fn remove_descriptor(&mut self, descriptor: &FileDescriptor) {
         self.fdescs.remove_item(descriptor);
+        self.dirty = true;
     }
 }
 
 pub struct Block {
+    pub dirty: bool,
     pub data: [u8; 512]
 }
 
 impl Block {
     fn new() -> Block {
-        Block{data:[0u8; 512]}
+        Block{dirty: true, data: [0u8; 512]}
     }
 
-    fn clear(& mut self) {
-        self = [0u8; 512];
+    fn clear(mut self) -> Block {
+        self = & mut Block{dirty: true, data: [0u8; 512]};
+        self
     }
 
-    fn set(& mut self, data: [u8; 512]) {
-        self = & mut Block{data: data};
+    fn set(mut self, data: [u8; 512]) -> Block {
+        self = & mut Block{dirty: true, data: data};
+        self
+    }
+
+    fn write(& mut self, location: [u8; 2])  -> Result<usize, &'static str> {
+        self.dirty = false;
+        unimplemented!();
     }
 }
 
@@ -97,7 +110,6 @@ impl Volume {
         let blocks: Vec<Block> = Vec::with_capacity(2880);
         Volume{magic: MAGIC, fat: FileAllocationTable::new(), blocks: blocks}
     }
-
 }
 
 fn main() {

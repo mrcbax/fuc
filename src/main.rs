@@ -1,16 +1,17 @@
 #![feature(vec_remove_item)]
 
 extern crate lz4;
-extern crate rand;
 
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::process::{Command, Stdio};
-use std::io::Write;
+use std::io::BufWriter;
+use std::io::SeekFrom;
+use std::io::prelude::*;
 
 use lz4::block::{compress, decompress, CompressionMode};
-use rand::prelude::*;
 
-pub const MAGIC: [u8; 3] = ['f' as u8, 'u' as u8, 'c' as u8];
+pub const MAGIC: [u8; 3] = ['a' as u8, 'a' as u8, 'a' as u8];
 
 pub struct FileDescriptor {
     pub dirty: bool,
@@ -21,7 +22,7 @@ pub struct FileDescriptor {
 
 impl FileDescriptor {
     fn new() -> FileDescriptor {
-        FileDescriptor{dirty: true, block: [0u8; 2], part: [0u8, 2], name: [0u8, 12]}
+        FileDescriptor{dirty: true, block: [0u8; 2], part: [0u8; 2], name: [0u8; 12]}
     }
 
     fn as_slice(&self) -> [u8; 16] {
@@ -99,12 +100,12 @@ impl Block {
     }
 
     fn clear(mut self) -> Block {
-        self = mut Block{dirty: true, data: [0u8; 512]};
+        self = Block{dirty: true, data: [0u8; 512]};
         self
     }
 
     fn set(mut self, data: [u8; 512]) -> Block {
-        self = & mut Block{dirty: true, data: data};
+        self = Block{dirty: true, data: data};
         self
     }
 
@@ -129,8 +130,20 @@ impl Volume {
         let blocks: Vec<Block> = Vec::with_capacity(2880);
         Volume{magic: MAGIC, fat: FileAllocationTable::new(), blocks: blocks}
     }
-    fn create(& mut self) -> Result<usize, & 'static str> {
-        let mut child = Command::new("dd")
+    fn create(& mut self) {
+
+        let mut f = OpenOptions::new().write(true).open("/dev/sdb").unwrap();
+
+        // skip to the last 10 bytes of the file
+        f.seek(SeekFrom::Start(0)).unwrap();
+
+        // read up to 10 bytes
+
+        let mut writer = BufWriter::new(f);
+        writer.write(&self.magic).unwrap();
+        writer.flush().unwrap();
+
+        /*let mut child = Command::new("dd")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .args(["of=/dev/sdb", "bs=3", "count=1"].into_iter())
@@ -145,15 +158,15 @@ impl Volume {
         match child.wait_with_output() {
             Ok(out) => {
                 println!("{}", String::from_utf8_lossy(&out.stdout));
-                return Ok(0);
+
             },
-            Err(err) => return Err(err.to_string().as_str()),
-        }
+            Err(_) =>{},
+        }*/
     }
-    fn write(& mut self) -> Result<usize, & 'static str> {
-        self.fat.write();
-        for block in self.blocks {
-            block.write([0u8, 2]);
+    fn write(mut self) -> Result<usize, & 'static str> {
+        self.fat.write().unwrap();
+        for mut block in self.blocks {
+            block.write([0u8, 2]).unwrap();
         }
         unimplemented!();
     }

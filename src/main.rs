@@ -11,7 +11,7 @@ use std::io::prelude::*;
 
 use lz4::block::{compress, decompress, CompressionMode};
 
-pub const MAGIC: [u8; 3] = ['a' as u8, 'a' as u8, 'a' as u8];
+pub const MAGIC: [u8; 3] = ['f' as u8, 'u' as u8, 'c' as u8];
 
 pub struct FileDescriptor {
     pub dirty: bool,
@@ -25,7 +25,7 @@ impl FileDescriptor {
         FileDescriptor{dirty: true, block: [0u8; 2], part: [0u8; 2], name: [0u8; 12]}
     }
 
-    fn as_slice(&self) -> [u8; 16] {
+    fn as_bytes(&self) -> [u8; 16] {
         let mut descriptor_slice: [u8; 16] = [0u8; 16];
         let mut i: usize = 0;
         for byte in &self.block {
@@ -50,6 +50,10 @@ impl FileDescriptor {
     fn is_dirty(&self) -> bool {
         self.dirty
     }
+
+    fn set_block(&mut self, value: [u8; 2]) {
+        self.block = value;
+    }
 }
 
 impl PartialEq for FileDescriptor {
@@ -70,8 +74,13 @@ impl FileAllocationTable {
     }
 
     fn write(& mut self) -> Result<usize, &'static str> {
+        let mut f = OpenOptions::new().write(true).open("/dev/sdb").unwrap();
+        f.seek(SeekFrom::Start(3)).unwrap();
+        let mut writer = BufWriter::new(f);
+        let bytes = self.as_bytes();
+        writer.write(&bytes).unwrap();
         self.dirty = false;
-        unimplemented!();
+        Ok(0)
     }
 
     fn add_descriptor(&mut self, descriptor: FileDescriptor) {
@@ -86,6 +95,20 @@ impl FileAllocationTable {
 
     fn is_dirty(&self) -> bool {
         self.dirty
+    }
+
+    fn as_bytes(&self) -> [u8; 46080] {
+        let mut bytes: [u8; 46080] = [0u8; 46080];
+        let mut ptr: usize = 0;
+        for fdesc in &self.fdescs {
+            let mut fdesc_ptr = 0;
+            for byte in fdesc.as_bytes().iter() {
+                bytes[ptr + fdesc_ptr] = byte.clone();
+                fdesc_ptr += 1;
+            }
+            ptr += 16;
+        }
+        bytes
     }
 }
 
@@ -131,37 +154,12 @@ impl Volume {
         Volume{magic: MAGIC, fat: FileAllocationTable::new(), blocks: blocks}
     }
     fn create(& mut self) {
-
         let mut f = OpenOptions::new().write(true).open("/dev/sdb").unwrap();
-
-        // skip to the last 10 bytes of the file
         f.seek(SeekFrom::Start(0)).unwrap();
-
-        // read up to 10 bytes
-
         let mut writer = BufWriter::new(f);
         writer.write(&self.magic).unwrap();
         writer.flush().unwrap();
-
-        /*let mut child = Command::new("dd")
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .args(["of=/dev/sdb", "bs=3", "count=1"].into_iter())
-            .spawn()
-            .expect("Failed to spawn child process");
-
-        {
-            let mut stdin = child.stdin.as_mut().expect("Failed to open stdin");
-            stdin.write_all(&self.magic).expect("Failed to write to stdin");
-        }
-
-        match child.wait_with_output() {
-            Ok(out) => {
-                println!("{}", String::from_utf8_lossy(&out.stdout));
-
-            },
-            Err(_) =>{},
-        }*/
+        self.fat.write().unwrap();
     }
     fn write(mut self) -> Result<usize, & 'static str> {
         self.fat.write().unwrap();
@@ -175,6 +173,21 @@ impl Volume {
 fn main() {
 
     let mut volume: Volume = Volume::new();
+
+    let mut not_done: bool = true;
+    let mut curr_block: u8 = 0;
+    let mut iter: usize = 0;
+    while not_done {
+        let mut fdesc = FileDescriptor::new();
+        fdesc.set_block([0, curr_block]);
+        fdesc.name = ['a' as u8, 'b' as u8, 1,1,1,1,1,1,1,1,1,1];
+        volume.fat.add_descriptor(fdesc);
+        curr_block += 1;
+        iter += 1;
+        if iter > 2879 {
+            not_done =  false;
+        }
+    }
     volume.create();
 
     /* let mut rng = rand::thread_rng();
@@ -191,3 +204,23 @@ fn main() {
         assert_eq!(rand_fat, decompress(&comp_wo_prefix, Some(512)).unwrap());
     }*/
 }
+
+/*let mut child = Command::new("dd")
+.stdin(Stdio::piped())
+.stdout(Stdio::piped())
+.args(["of=/dev/sdb", "bs=3", "count=1"].into_iter())
+.spawn()
+.expect("Failed to spawn child process");
+
+{
+let mut stdin = child.stdin.as_mut().expect("Failed to open stdin");
+stdin.write_all(&self.magic).expect("Failed to write to stdin");
+        }
+
+        match child.wait_with_output() {
+            Ok(out) => {
+                println!("{}", String::from_utf8_lossy(&out.stdout));
+
+            },
+            Err(_) =>{},
+        }*/

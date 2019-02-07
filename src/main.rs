@@ -1,8 +1,11 @@
 #![feature(vec_remove_item)]
 
-extern crate dd_lib;
 extern crate lz4;
 extern crate rand;
+
+use std::fs::File;
+use std::process::{Command, Stdio};
+use std::io::Write;
 
 use lz4::block::{compress, decompress, CompressionMode};
 use rand::prelude::*;
@@ -17,6 +20,10 @@ pub struct FileDescriptor {
 }
 
 impl FileDescriptor {
+    fn new() -> FileDescriptor {
+        FileDescriptor{dirty: true, block: [0u8; 2], part: [0u8, 2], name: [0u8, 12]}
+    }
+
     fn as_slice(&self) -> [u8; 16] {
         let mut descriptor_slice: [u8; 16] = [0u8; 16];
         let mut i: usize = 0;
@@ -38,6 +45,10 @@ impl FileDescriptor {
     fn from_slice(slice: [u8; 16]) -> FileDescriptor {
         FileDescriptor{dirty: true, block: [slice[0], slice[1]], part: [slice[2], slice[3]], name: [slice[4], slice[5], slice[6], slice[7], slice[8], slice[9], slice[10], slice[11], slice[12], slice[13], slice[14], slice[15]]}
     }
+
+    fn is_dirty(&self) -> bool {
+        self.dirty
+    }
 }
 
 impl PartialEq for FileDescriptor {
@@ -57,7 +68,7 @@ impl FileAllocationTable {
         FileAllocationTable{dirty: true, fdescs: fdescs}
     }
 
-    fn write(& mut self, location: String) -> Result<usize, &'static str> {
+    fn write(& mut self) -> Result<usize, &'static str> {
         self.dirty = false;
         unimplemented!();
     }
@@ -70,6 +81,10 @@ impl FileAllocationTable {
     fn remove_descriptor(&mut self, descriptor: &FileDescriptor) {
         self.fdescs.remove_item(descriptor);
         self.dirty = true;
+    }
+
+    fn is_dirty(&self) -> bool {
+        self.dirty
     }
 }
 
@@ -84,7 +99,7 @@ impl Block {
     }
 
     fn clear(mut self) -> Block {
-        self = & mut Block{dirty: true, data: [0u8; 512]};
+        self = mut Block{dirty: true, data: [0u8; 512]};
         self
     }
 
@@ -96,6 +111,10 @@ impl Block {
     fn write(& mut self, location: [u8; 2])  -> Result<usize, &'static str> {
         self.dirty = false;
         unimplemented!();
+    }
+
+    fn is_dirty(&self) -> bool {
+        self.dirty
     }
 }
 
@@ -110,10 +129,42 @@ impl Volume {
         let blocks: Vec<Block> = Vec::with_capacity(2880);
         Volume{magic: MAGIC, fat: FileAllocationTable::new(), blocks: blocks}
     }
+    fn create(& mut self) -> Result<usize, & 'static str> {
+        let mut child = Command::new("dd")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .args(["of=/dev/sdb", "bs=3", "count=1"].into_iter())
+            .spawn()
+            .expect("Failed to spawn child process");
+
+        {
+            let mut stdin = child.stdin.as_mut().expect("Failed to open stdin");
+            stdin.write_all(&self.magic).expect("Failed to write to stdin");
+        }
+
+        match child.wait_with_output() {
+            Ok(out) => {
+                println!("{}", String::from_utf8_lossy(&out.stdout));
+                return Ok(0);
+            },
+            Err(err) => return Err(err.to_string().as_str()),
+        }
+    }
+    fn write(& mut self) -> Result<usize, & 'static str> {
+        self.fat.write();
+        for block in self.blocks {
+            block.write([0u8, 2]);
+        }
+        unimplemented!();
+    }
 }
 
 fn main() {
-    let mut rng = rand::thread_rng();
+
+    let mut volume: Volume = Volume::new();
+    volume.create();
+
+    /* let mut rng = rand::thread_rng();
     for _ in 0..1000 {
         let mut rand_fat: Vec<u8> = vec!();
         for _ in 0..512 {
@@ -125,5 +176,5 @@ fn main() {
        // println!("{:?}", &comp_wo_prefix);
         println!("{}", comp_wo_prefix.len());
         assert_eq!(rand_fat, decompress(&comp_wo_prefix, Some(512)).unwrap());
-    }
+    }*/
 }

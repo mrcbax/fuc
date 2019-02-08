@@ -13,28 +13,24 @@ pub mod fuc;
 
 use fuc::volume::Volume;
 use fuc::file_descriptor::FileDescriptor;
+use fuc::block::Block;
 
 //use lz4::block::{compress, decompress, CompressionMode};
 
 fn main() {
 
     let mut volume: Volume = Volume::new();
-
-    let mut not_done: bool = true;
-    let mut curr_block: u8 = 0;
-    let mut iter: usize = 0;
-    while not_done {
-        let mut fdesc = FileDescriptor::new();
-        fdesc.set_block([0, curr_block]);
-        fdesc.name = ['a' as u8, 'b' as u8, 1,1,1,1,1,1,1,1,1,1];
-        volume.fat.add_descriptor(fdesc);
-        curr_block += 1;
-        iter += 1;
-        if iter > 2879 {
-            not_done =  false;
-        }
-    }
+    let mut fdesc = FileDescriptor::new();
+    fdesc.set_block([0, 0]);
+    fdesc.name = ['a' as u8, 'b' as u8, 1,1,1,1,1,1,1,1,1,1];
+    volume.fat.add_descriptor(fdesc);
+    volume.add_file("/home/cbax/Downloads/real_programmers.png").unwrap();
     volume.create();
+    println!("volume created");
+    std::thread::sleep(std::time::Duration::from_millis(10000));
+    volume.blocks[2] = Block{dirty: true, id: volume.blocks[2].id, data: [0u8; 512]};
+    volume.write().unwrap();
+    println!("block updated");
 
     /* let mut rng = rand::thread_rng();
     for _ in 0..1000 {

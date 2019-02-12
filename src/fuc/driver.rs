@@ -19,8 +19,12 @@ impl Device {
         self.path = path;
     }
 
-    pub fn get_path(&self) -> String {
-        self.path
+    pub fn get_path(&self) -> &String {
+        &self.path
+    }
+
+    pub fn get_mut_path(&mut self) -> &mut String {
+        &mut self.path
     }
 
     pub fn set_size(&mut self, size: usize) {
@@ -57,8 +61,8 @@ impl Reader {
         &self.device
     }
 
-    pub fn get_mut_device(&mut self) -> &Device {
-        &self.device
+    pub fn get_mut_device(&mut self) -> &mut Device {
+        &mut self.device
     }
 }
 
@@ -87,7 +91,7 @@ impl Writer {
         &self.device
     }
 
-    pub fn get_mut_device(&mut self) -> &Device {
-        &self.device
+    pub fn get_mut_device(&mut self) -> &mut Device {
+        &mut self.device
     }
 }

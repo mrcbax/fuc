@@ -2,7 +2,7 @@ use super::volume::MAGIC_LENGTH;
 use super::descriptor::FileDescriptor;
 use super::driver::Writer;
 
-pub const FAT_LENGTH: usize = 46080;
+pub const FAT_LENGTH: usize = 46080 + MAGIC_LENGTH;
 
 pub struct FileAllocationTable {
     fdesc: Vec<FileDescriptor>,

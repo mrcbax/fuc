@@ -2,16 +2,13 @@ use super::driver::Writer;
 
 pub const FDESC_LENGTH: usize = 16;
 
+#[derive(Clone)]
 pub struct FileDescriptor {
     block_id: [u8; 2],
     part_id: [u8; 2],
     name_id: [u8; 2],
     name: [u8; 12],
     dirty: bool
-}
-
-impl Clone for FileDescriptor {
-    fn clone(&self) -> FileDescriptor{*self}
 }
 
 impl FileDescriptor {

@@ -1,0 +1,8 @@
+[package]
+name = "fuc"
+version = "0.1.0"
+authors = ["Chad Baxter <cbaxter@mail.umw.edu>"]
+edition = "2018"
+
+[dependencies]
+lz4 = "1.23.1"
